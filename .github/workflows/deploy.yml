@@ -1,0 +1,153 @@
+name: Deploy GEOTEE Chatbot
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            echo "🚀 Starting deployment..."
+            
+            # Navigate to project directory
+            cd /opt/geotee-chatbot || exit 1
+            
+            # Pull latest changes
+            echo "📥 Pulling latest changes from GitHub..."
+            git pull origin main
+            
+            # Check if pull was successful
+            if [ $? -ne 0 ]; then
+              echo "❌ Git pull failed!"
+              exit 1
+            fi
+            
+            # Activate virtual environment
+            echo "🐍 Activating virtual environment..."
+            source venv/bin/activate
+            
+            # Update Python dependencies if requirements changed
+            echo "📦 Checking for dependency updates..."
+            if git diff HEAD@{1} HEAD --name-only | grep -q "requirements.txt"; then
+              echo "📦 Installing updated dependencies..."
+              pip install -r requirements.txt
+            fi
+            
+            # Check if Rasa training data changed
+            if git diff HEAD@{1} HEAD --name-only | grep -q "rasa_bot/data/"; then
+              echo "🎓 Training data changed, retraining model..."
+              cd rasa_bot
+              rasa train --force
+              cd ..
+            fi
+            
+            # Rebuild and restart Docker containers
+            echo "🐳 Rebuilding and restarting Docker containers..."
+            cd deployment/docker
+            
+            # Pull latest images if needed
+            docker-compose pull
+            
+            # Rebuild containers (only if Dockerfiles changed)
+            if git diff HEAD@{1} HEAD --name-only | grep -q "Dockerfile"; then
+              echo "🔨 Rebuilding containers..."
+              docker-compose build --no-cache
+            fi
+            
+            # Restart services
+            docker-compose down
+            docker-compose up -d
+            
+            # Wait for services to be healthy
+            echo "⏳ Waiting for services to start..."
+            sleep 30
+            
+            # Health check
+            echo "🏥 Performing health check..."
+            
+            # Check if Rasa is responding
+            RASA_STATUS=$(docker-compose ps rasa | grep -c "Up")
+            if [ "$RASA_STATUS" -eq 0 ]; then
+              echo "❌ Rasa service is not running!"
+              docker-compose logs rasa
+              exit 1
+            fi
+            
+            # Check if Actions server is responding
+            ACTIONS_STATUS=$(docker-compose ps rasa-actions | grep -c "Up")
+            if [ "$ACTIONS_STATUS" -eq 0 ]; then
+              echo "❌ Actions service is not running!"
+              docker-compose logs rasa-actions
+              exit 1
+            fi
+            
+            # Check if Analytics is responding
+            ANALYTICS_STATUS=$(docker-compose ps analytics | grep -c "Up")
+            if [ "$ANALYTICS_STATUS" -eq 0 ]; then
+              echo "❌ Analytics service is not running!"
+              docker-compose logs analytics
+              exit 1
+            fi
+            
+            # Test chatbot endpoint
+            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5005/webhooks/rest/webhook \
+              -H "Content-Type: application/json" \
+              -d '{"sender": "github_deploy_test", "message": "test"}')
+            
+            if [ "$RESPONSE" != "200" ]; then
+              echo "❌ Chatbot health check failed! HTTP $RESPONSE"
+              exit 1
+            fi
+            
+            echo "✅ Deployment completed successfully!"
+            echo "🎉 All services are running and healthy"
+            
+            # Show service status
+            docker-compose ps
+            
+            # Create deployment log
+            echo "$(date): Deployment successful - Commit: $GITHUB_SHA" >> /opt/geotee-chatbot/logs/deployments.log
+
+      - name: Notify on failure
+        if: failure()
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            echo "❌ Deployment failed at $(date)" >> /opt/geotee-chatbot/logs/deployment_failures.log
+            
+            # Try to rollback to previous state
+            cd /opt/geotee-chatbot
+            git reset --hard HEAD@{1}
+            
+            cd deployment/docker
+            docker-compose restart
+            
+            echo "⚠️ Rolled back to previous version"
+
+      - name: Send deployment notification
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Deployment to ai-geotee.cloud completed successfully!"
+          else
+            echo "❌ Deployment failed! Check logs for details."
+          fi
