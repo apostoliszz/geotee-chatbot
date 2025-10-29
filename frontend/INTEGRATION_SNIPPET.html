@@ -1,0 +1,142 @@
+<!-- 
+    ΓΕΩΤΕΕ Chatbot Widget - Integration Snippet
+    Copy-paste αυτό το code στο geotee.gr website
+    Τοποθετήστε πριν το closing </body> tag
+-->
+
+<!-- Chatbot Widget Container -->
+<div id="geotee-chatbot-container"></div>
+
+<!-- Load Widget Script -->
+<script>
+    // Configuration (optional - customize if needed)
+    window.GEOTEE_CHATBOT_CONFIG = {
+        // API endpoint
+        apiUrl: 'https://ai-geotee.cloud/webhooks/rest/webhook',
+        
+        // Widget position
+        position: {
+            bottom: '20px',
+            right: '20px'
+        },
+        
+        // Colors (optional - defaults are already set)
+        theme: {
+            primaryColor: '#667eea',
+            secondaryColor: '#764ba2',
+        },
+        
+        // Behavior
+        autoOpen: false,  // Auto-open on page load
+        showWelcome: true,  // Show welcome message
+        
+        // Rate limiting (matches server-side)
+        maxQueries: 10,
+        sessionTimeout: 60 // minutes
+    };
+</script>
+
+<!-- Load the widget -->
+<script src="https://ai-geotee.cloud/chatbot-widget.js" async></script>
+
+<!-- Optional: Matomo Analytics Integration -->
+<script>
+    // Matomo tracking code (if you use Matomo)
+    var _paq = window._paq = window._paq || [];
+    _paq.push(['trackPageView']);
+    _paq.push(['enableLinkTracking']);
+    (function() {
+        var u="https://ai-geotee.cloud/matomo/";
+        _paq.push(['setTrackerUrl', u+'matomo.php']);
+        _paq.push(['setSiteId', '1']);
+        var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+        g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+    })();
+</script>
+
+<!-- 
+    ALTERNATIVE: Inline Widget (If you prefer not to load external JS)
+    Replace the <script src="..."> line above with:
+    
+    <script src="/path/to/chatbot-widget-enhanced.html"></script>
+    
+    Or embed the entire HTML content inline
+-->
+
+<!-- 
+    WORDPRESS INTEGRATION:
+    1. Go to Appearance → Theme Editor
+    2. Open footer.php
+    3. Paste this code before </body>
+    4. Save
+-->
+
+<!-- 
+    CUSTOM STYLING (Optional):
+    Override widget styles with custom CSS
+-->
+<style>
+    /* Example: Change widget position on mobile */
+    @media (max-width: 768px) {
+        #geotee-chat-widget {
+            bottom: 10px !important;
+            right: 10px !important;
+        }
+    }
+    
+    /* Example: Hide widget on specific pages */
+    body.admin-page #geotee-chat-widget {
+        display: none;
+    }
+</style>
+
+<!-- 
+    ADVANCED: Programmatic Control
+    Control the widget with JavaScript
+-->
+<script>
+    // Wait for widget to load
+    window.addEventListener('geotee-chatbot-loaded', function() {
+        console.log('GEOTEE Chatbot loaded!');
+        
+        // Open chat programmatically
+        // window.geoteeChatbot.open();
+        
+        // Close chat
+        // window.geoteeChatbot.close();
+        
+        // Send message programmatically
+        // window.geoteeChatbot.sendMessage('Γεια σας');
+        
+        // Listen for events
+        window.addEventListener('geotee-message-sent', function(e) {
+            console.log('User sent:', e.detail.message);
+        });
+        
+        window.addEventListener('geotee-message-received', function(e) {
+            console.log('Bot replied:', e.detail.message);
+        });
+    });
+</script>
+
+<!-- 
+    TESTING:
+    1. Save this file
+    2. Open in browser
+    3. Click chat button
+    4. Accept terms
+    5. Send a test message in Greek
+    
+    TROUBLESHOOTING:
+    - Check browser console for errors
+    - Verify HTTPS (widget requires secure context)
+    - Check CORS settings on server
+    - Test API endpoint: https://ai-geotee.cloud/webhooks/rest/webhook
+-->
+
+<!-- 
+    SUPPORT:
+    - Documentation: https://ai-geotee.cloud/docs
+    - Issues: Contact dev@geotee.gr
+    - Version: 2.0
+-->

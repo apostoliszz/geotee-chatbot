@@ -1,1 +1,222 @@
-# Copy content from Claude artifacts
+version: '3.8'
+
+services:
+  # PostgreSQL Database - Conversation Tracker
+  postgres:
+    image: postgres:15-alpine
+    container_name: geotee_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-geotee_chatbot}
+      POSTGRES_USER: ${POSTGRES_USER:-geotee_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=el_GR.UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-geotee_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - geotee_network
+
+  # Redis - Rate Limiting & Session Management
+  redis:
+    image: redis:7-alpine
+    container_name: geotee_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - geotee_network
+
+  # Qdrant Vector Database - Knowledge Base
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: geotee_qdrant
+    restart: unless-stopped
+    volumes:
+      - qdrant_data:/qdrant/storage
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    environment:
+      QDRANT__SERVICE__GRPC_PORT: 6334
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/readyz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - geotee_network
+
+  # Rasa Server - NLU + Dialogue Management
+  rasa:
+    build:
+      context: ../../rasa_bot
+      dockerfile: ../deployment/docker/Dockerfile.rasa
+    container_name: geotee_rasa
+    restart: unless-stopped
+    ports:
+      - "5005:5005"
+    volumes:
+      - ../../rasa_bot/models:/app/models
+      - ../../rasa_bot/data:/app/data
+      - ../../rasa_bot/config.yml:/app/config.yml
+      - ../../rasa_bot/domain.yml:/app/domain.yml
+      - ../../rasa_bot/endpoints.yml:/app/endpoints.yml
+    environment:
+      - RASA_TOKEN=${RASA_TOKEN}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-geotee_chatbot}
+      - POSTGRES_USER=${POSTGRES_USER:-geotee_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - ACTION_SERVER_URL=http://rasa-actions:5055/webhook
+    command: >
+      run
+      --enable-api
+      --cors "*"
+      --auth-token ${RASA_TOKEN}
+      --endpoints endpoints.yml
+      --port 5005
+      --credentials credentials.yml
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rasa-actions:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5005/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - geotee_network
+
+  # Rasa Actions Server - Custom Actions
+  rasa-actions:
+    build:
+      context: ../../rasa_bot
+      dockerfile: ../deployment/docker/Dockerfile.actions
+    container_name: geotee_rasa_actions
+    restart: unless-stopped
+    ports:
+      - "5055:5055"
+    volumes:
+      - ../../rasa_bot/actions:/app/actions
+      - ../../data:/app/data
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-geotee_chatbot}
+      - POSTGRES_USER=${POSTGRES_USER:-geotee_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - MAX_QUERIES_PER_SESSION=${MAX_QUERIES_PER_SESSION:-10}
+      - SESSION_TIMEOUT_MINUTES=${SESSION_TIMEOUT_MINUTES:-60}
+      - KNOWLEDGE_BASE_PATH=/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5055/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - geotee_network
+
+  # Analytics API - FastAPI Backend
+  analytics:
+    image: python:3.11-slim
+    container_name: geotee_analytics
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../../analytics:/app
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-geotee_chatbot}
+      - POSTGRES_USER=${POSTGRES_USER:-geotee_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    command: >
+      sh -c "pip install --no-cache-dir fastapi uvicorn redis psycopg2-binary &&
+             uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - geotee_network
+
+  # Nginx - Reverse Proxy & SSL
+  nginx:
+    image: nginx:alpine
+    container_name: geotee_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx/.htpasswd:/etc/nginx/.htpasswd:ro
+      - ../ssl:/etc/nginx/ssl:ro
+      - ../../frontend:/usr/share/nginx/html:ro
+    depends_on:
+      - rasa
+      - analytics
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - geotee_network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  qdrant_data:
+    driver: local
+
+networks:
+  geotee_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

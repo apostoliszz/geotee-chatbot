@@ -1,0 +1,2 @@
+# This file ensures the data/ directory is tracked by Git
+# Scraped data and processed files will be stored here during runtime

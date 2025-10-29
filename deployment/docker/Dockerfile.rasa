@@ -1,1 +1,58 @@
-# Copy content from Claude artifacts
+# Rasa Server Dockerfile
+# Based on official Rasa image with Greek language support
+
+FROM rasa/rasa:3.6.20-full
+
+# Switch to root to install packages
+USER root
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    git \
+    locales \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set up Greek locale
+RUN sed -i '/el_GR.UTF-8/s/^# //g' /etc/locale.gen && \
+    locale-gen el_GR.UTF-8
+
+ENV LANG=el_GR.UTF-8
+ENV LANGUAGE=el_GR:el
+ENV LC_ALL=el_GR.UTF-8
+
+# Switch back to rasa user
+USER 1001
+
+# Set working directory
+WORKDIR /app
+
+# Copy Rasa configuration files
+COPY --chown=1001:1001 config.yml config.yml
+COPY --chown=1001:1001 domain.yml domain.yml
+COPY --chown=1001:1001 endpoints.yml endpoints.yml
+COPY --chown=1001:1001 credentials.yml credentials.yml
+
+# Copy training data
+COPY --chown=1001:1001 data/ data/
+
+# Copy trained model (if exists)
+COPY --chown=1001:1001 models/ models/
+
+# Expose Rasa port
+EXPOSE 5005
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+    CMD curl -f http://localhost:5005/ || exit 1
+
+# Default command (can be overridden in docker-compose.yml)
+CMD ["run", \
+     "--enable-api", \
+     "--cors", "*", \
+     "--port", "5005", \
+     "--endpoints", "endpoints.yml", \
+     "--credentials", "credentials.yml"]

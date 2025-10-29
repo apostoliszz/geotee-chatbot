@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ΓΕΩΤΕΕ Chatbot Widget</title>
+    <style>
+        /* Previous styles remain the same... */
+        #geotee-chat-widget {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        #chat-button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        #chat-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+        }
+        
+        #chat-button svg {
+            width: 28px;
+            height: 28px;
+            fill: white;
+        }
+        
+        #chat-window {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 380px;
+            height: 600px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        #chat-window.open {
+            display: flex;
+        }
+        
+        /* Terms Modal */
+        #terms-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        #terms-modal.hidden {
+            display: none;
+        }
+        
+        #terms-modal h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+        
+        #terms-modal p {
+            color: #2c3e50;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+        
+        #accept-terms {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 24px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        #accept-terms:hover {
+            transform: scale(1.05);
+        }
+        
+        #chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        #chat-header h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+        
+        #chat-header p {
+            margin: 5px 0 0 0;
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        #close-chat {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f5f7fa;
+        }
+        
+        .message {
+            margin-bottom: 16px;
+            display: flex;
+            align-items: flex-end;
+        }
+        
+        .message.user {
+            justify-content: flex-end;
+        }
+        
+        .message-content {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+        }
+        
+        .message.bot .message-content {
+            background: white;
+            color: #2c3e50;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .message-link {
+            display: block;
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: #f0f4ff;
+            border-radius: 8px;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+        
+        .message-link:hover {
+            background: #e0e8ff;
+        }
+        
+        .typing-indicator {
+            display: none;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 18px;
+            width: fit-content;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .typing-indicator.show {
+            display: block;
+        }
+        
+        .typing-indicator span {
+            height: 8px;
+            width: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 2px;
+            animation: typing 1.4s infinite;
+        }
+        
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+        
+        #chat-input-area {
+            padding: 16px;
+            background: white;
+            border-top: 1px solid #ecf0f1;
+            display: flex;
+            gap: 8px;
+        }
+        
+        #chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #ecf0f1;
+            border-radius: 24px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        #chat-input:focus {
+            border-color: #667eea;
+        }
+        
+        #send-button {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+        
+        #send-button:hover:not(:disabled) {
+            transform: scale(1.1);
+        }
+        
+        #send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        #send-button svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+        
+        .rate-limit-warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 12px;
+            margin: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            text-align: center;
+        }
+        
+        @media (max-width: 480px) {
+            #chat-window {
+                width: 100%;
+                height: 100%;
+                bottom: 0;
+                right: 0;
+                border-radius: 0;
+            }
+            
+            #chat-button {
+                bottom: 16px;
+                right: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="geotee-chat-widget">
+        <!-- Chat Button -->
+        <button id="chat-button" aria-label="Άνοιγμα Chat">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+            </svg>
+        </button>
+        
+        <!-- Chat Window -->
+        <div id="chat-window">
+            <!-- Terms Modal -->
+            <div id="terms-modal">
+                <h3>📋 Όροι Χρήσης</h3>
+                <p>
+                    Η συνομιλία <strong>δεν καταγράφει</strong> τα δεδομένα που εισάγετε.<br><br>
+                    <strong>Μέγιστος αριθμός:</strong> 10 ερωτήσεις ανά συνεδρία<br>
+                    <strong>Μέγιστος χρόνος:</strong> 60 λεπτά παραμονής
+                </p>
+                <button id="accept-terms">Αποδοχή & Συνέχεια</button>
+            </div>
+            
+            <!-- Main Chat Interface -->
+            <div id="chat-header">
+                <div>
+                    <h3>ΓΕΩΤΕΕ Βοηθός</h3>
+                    <p>Ρωτήστε με οτιδήποτε</p>
+                </div>
+                <button id="close-chat" aria-label="Κλείσιμο">×</button>
+            </div>
+            
+            <div id="chat-messages">
+                <div class="message bot">
+                    <div>
+                        <div class="message-content">
+                            Γεια σας! 👋 Είμαι ο ψηφιακός βοηθός του ΓΕΩΤΕΕ. Πώς μπορώ να σας βοηθήσω σήμερα;
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            
+            <div id="chat-input-area">
+                <input 
+                    type="text" 
+                    id="chat-input" 
+                    placeholder="Γράψτε την ερώτησή σας..."
+                    maxlength="500"
+                    disabled
+                />
+                <button id="send-button" aria-label="Αποστολή" disabled>
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Configuration
+        const RASA_URL = 'https://ai-geotee.cloud/webhooks/rest/webhook';
+        const SENDER_ID = 'user_' + Math.random().toString(36).substr(2, 9);
+        
+        // DOM Elements
+        const chatButton = document.getElementById('chat-button');
+        const chatWindow = document.getElementById('chat-window');
+        const termsModal = document.getElementById('terms-modal');
+        const acceptTermsBtn = document.getElementById('accept-terms');
+        const closeChat = document.getElementById('close-chat');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const sendButton = document.getElementById('send-button');
+        const typingIndicator = document.querySelector('.typing-indicator');
+        
+        let queryCount = 0;
+        let sessionStartTime = Date.now();
+        let termsAccepted = localStorage.getItem('geotee_terms_accepted') === 'true';
+        const MAX_QUERIES = 10;
+        const SESSION_TIMEOUT = 60 * 60 * 1000; // 60 minutes
+        
+        // Toggle chat window
+        chatButton.addEventListener('click', () => {
+            chatWindow.classList.toggle('open');
+            if (chatWindow.classList.contains('open')) {
+                if (!termsAccepted) {
+                    termsModal.classList.remove('hidden');
+                } else {
+                    termsModal.classList.add('hidden');
+                    chatInput.focus();
+                }
+                trackEvent('chat_opened');
+            }
+        });
+        
+        // Accept terms
+        acceptTermsBtn.addEventListener('click', () => {
+            termsAccepted = true;
+            localStorage.setItem('geotee_terms_accepted', 'true');
+            termsModal.classList.add('hidden');
+            chatInput.disabled = false;
+            sendButton.disabled = false;
+            chatInput.focus();
+            trackEvent('terms_accepted');
+        });
+        
+        closeChat.addEventListener('click', () => {
+            chatWindow.classList.remove('open');
+        });
+        
+        // Send message on Enter
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+        sendButton.addEventListener('click', sendMessage);
+        
+        // Check if message is in English
+        function isEnglish(text) {
+            const greekLetters = /[α-ωΑ-Ω]/;
+            const englishLetters = /[a-zA-Z]/;
+            
+            const hasGreek = greekLetters.test(text);
+            const hasEnglish = englishLetters.test(text);
+            
+            // If has English but no Greek, it's English
+            return hasEnglish && !hasGreek;
+        }
+        
+        async function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message) return;
+            
+            // Check for English
+            if (isEnglish(message)) {
+                addMessage(message, 'user');
+                chatInput.value = '';
+                
+                setTimeout(() => {
+                    addMessage('Υποστηρίζουμε μόνο Ελληνικά. 🇬🇷', 'bot');
+                }, 500);
+                return;
+            }
+            
+            // Check rate limits
+            const timeElapsed = Date.now() - sessionStartTime;
+            if (queryCount >= MAX_QUERIES || timeElapsed > SESSION_TIMEOUT) {
+                showRateLimitWarning();
+                return;
+            }
+            
+            // Add user message
+            addMessage(message, 'user');
+            chatInput.value = '';
+            queryCount++;
+            
+            // Show typing indicator
+            typingIndicator.classList.add('show');
+            scrollToBottom();
+            
+            // Send to Rasa
+            try {
+                const response = await fetch(RASA_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        sender: SENDER_ID,
+                        message: message
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Hide typing indicator
+                typingIndicator.classList.remove('show');
+                
+                // Add bot responses
+                if (data && data.length > 0) {
+                    data.forEach(msg => {
+                        if (msg.text) {
+                            // Check if response includes URL metadata
+                            const url = msg.custom?.url || extractUrlFromText(msg.text);
+                            addMessage(msg.text, 'bot', url);
+                        }
+                    });
+                } else {
+                    addMessage('Συγνώμη, αντιμετώπισα ένα πρόβλημα. Δοκιμάστε ξανά.', 'bot');
+                }
+                
+                // Track query
+                trackEvent('message_sent', { query_count: queryCount });
+                
+                // Warn if approaching limit
+                if (queryCount === 8) {
+                    showRateLimitWarning(`Απομένουν ${MAX_QUERIES - queryCount} ερωτήσεις`);
+                }
+                
+            } catch (error) {
+                console.error('Error sending message:', error);
+                typingIndicator.classList.remove('show');
+                addMessage('Συγνώμη, δεν μπόρεσα να επικοινωνήσω με τον server. Δοκιμάστε ξανά.', 'bot');
+            }
+        }
+        
+        function extractUrlFromText(text) {
+            const urlRegex = /(https?:\/\/[^\s]+)/;
+            const match = text.match(urlRegex);
+            return match ? match[1] : null;
+        }
+        
+        function addMessage(text, sender, url = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const contentDiv = document.createElement('div');
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            content.textContent = text;
+            
+            contentDiv.appendChild(content);
+            
+            // Add URL link if provided
+            if (url && sender === 'bot') {
+                const link = document.createElement('a');
+                link.href = url;
+                link.className = 'message-link';
+                link.target = '_blank';
+                link.textContent = '🔗 Δείτε περισσότερα';
+                contentDiv.appendChild(link);
+            }
+            
+            messageDiv.appendChild(contentDiv);
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+        }
+        
+        function showRateLimitWarning(customMessage = null) {
+            const warning = document.createElement('div');
+            warning.className = 'rate-limit-warning';
+            warning.textContent = customMessage || 
+                '⛔ Έχετε φτάσει το όριο χρήσης. Ανανεώστε τη σελίδα για νέα συνεδρία.';
+            
+            chatMessages.appendChild(warning);
+            scrollToBottom();
+            
+            if (!customMessage) {
+                // Disable input
+                chatInput.disabled = true;
+                sendButton.disabled = true;
+            }
+        }
+        
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        function trackEvent(eventName, data = {}) {
+            // Send to analytics (Matomo or custom)
+            if (typeof _paq !== 'undefined') {
+                _paq.push(['trackEvent', 'Chatbot', eventName, JSON.stringify(data)]);
+            }
+        }
+        
+        // Initialize
+        trackEvent('widget_loaded');
+    </script>
+</body>
+</html>

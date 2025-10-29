@@ -1,1 +1,54 @@
-# Copy content from Claude artifacts
+# Rasa Actions Server Dockerfile
+# Custom actions with Redis, Qdrant, and PostgreSQL integration
+
+FROM rasa/rasa-sdk:3.6.2
+
+# Switch to root to install packages
+USER root
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    git \
+    locales \
+    libpq-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set up Greek locale
+RUN sed -i '/el_GR.UTF-8/s/^# //g' /etc/locale.gen && \
+    locale-gen el_GR.UTF-8
+
+ENV LANG=el_GR.UTF-8
+ENV LANGUAGE=el_GR:el
+ENV LC_ALL=el_GR.UTF-8
+
+# Install Python dependencies for custom actions
+RUN pip install --no-cache-dir \
+    redis==5.0.1 \
+    psycopg2-binary==2.9.9 \
+    qdrant-client==1.7.0 \
+    sentence-transformers==2.2.2 \
+    langdetect==1.0.9 \
+    python-dotenv==1.0.0
+
+# Switch back to non-root user
+USER 1001
+
+# Set working directory
+WORKDIR /app
+
+# Copy actions code
+COPY --chown=1001:1001 actions/ actions/
+
+# Expose actions port
+EXPOSE 5055
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+    CMD curl -f http://localhost:5055/health || exit 1
+
+# Default command
+CMD ["start", "--actions", "actions"]

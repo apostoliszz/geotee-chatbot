@@ -1,1 +1,445 @@
-# Copy content from Claude artifacts
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ΓΕΩΤΕΕ Chatbot Analytics</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    
+    <!-- Date formatting -->
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@3.0.0/index.min.js"></script>
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        .stat-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(99, 102, 241, 0.3);
+            border-radius: 50%;
+            border-top-color: #6366f1;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">📊 ΓΕΩΤΕΕ Chatbot Analytics</h1>
+                    <p class="text-sm text-gray-600 mt-1">Real-time στατιστικά χρήσης</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="refreshData()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                        🔄 Ανανέωση
+                    </button>
+                    <button onclick="exportCSV()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                        📥 Export CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Total Queries -->
+            <div class="stat-card bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-indigo-100 rounded-lg p-3">
+                        <svg class="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <p class="text-sm font-medium text-gray-600">Σύνολο Ερωτήσεων</p>
+                        <p class="text-2xl font-bold text-gray-900" id="total-queries">
+                            <span class="loading"></span>
+                        </p>
+                        <p class="text-xs text-gray-500 mt-1">Σήμερα</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Unique Users -->
+            <div class="stat-card bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-green-100 rounded-lg p-3">
+                        <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <p class="text-sm font-medium text-gray-600">Μοναδικοί Χρήστες</p>
+                        <p class="text-2xl font-bold text-gray-900" id="unique-users">
+                            <span class="loading"></span>
+                        </p>
+                        <p class="text-xs text-gray-500 mt-1">Σήμερα</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Average Confidence -->
+            <div class="stat-card bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-yellow-100 rounded-lg p-3">
+                        <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <p class="text-sm font-medium text-gray-600">Μέση Εμπιστοσύνη</p>
+                        <p class="text-2xl font-bold text-gray-900" id="avg-confidence">
+                            <span class="loading"></span>
+                        </p>
+                        <p class="text-xs text-gray-500 mt-1">Σήμερα</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Users (All Time) -->
+            <div class="stat-card bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-purple-100 rounded-lg p-3">
+                        <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <p class="text-sm font-medium text-gray-600">Σύνολο Χρηστών</p>
+                        <p class="text-2xl font-bold text-gray-900" id="total-users">
+                            <span class="loading"></span>
+                        </p>
+                        <p class="text-xs text-gray-500 mt-1">Όλος ο χρόνος</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Queries Over Time -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">📈 Ερωτήσεις ανά Ημέρα (7 ημέρες)</h2>
+                <canvas id="queriesChart"></canvas>
+            </div>
+
+            <!-- Top Intents -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">🎯 Κορυφαία Intents (Σήμερα)</h2>
+                <canvas id="intentsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Low Confidence Queries -->
+        <div class="bg-white rounded-lg shadow p-6 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900">⚠️ Ερωτήσεις με Χαμηλή Εμπιστοσύνη (7 ημέρες)</h2>
+                <span class="text-sm text-gray-600" id="low-confidence-count">
+                    <span class="loading"></span>
+                </span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ερώτηση</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Intent</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Εμπιστοσύνη</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ημερομηνία</th>
+                        </tr>
+                    </thead>
+                    <tbody id="low-confidence-table" class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td colspan="4" class="px-6 py-4 text-center">
+                                <span class="loading"></span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Recent Conversations -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">💬 Πρόσφατες Συνομιλίες</h2>
+            <div id="recent-conversations" class="space-y-3">
+                <div class="text-center py-4">
+                    <span class="loading"></span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <p class="text-center text-sm text-gray-600">
+                © 2024 Γεωτεχνικό Επιμελητήριο Ελλάδος • Auto-refresh κάθε 30 δευτερόλεπτα
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // API Base URL
+        const API_BASE = window.location.origin;
+
+        // Charts
+        let queriesChart = null;
+        let intentsChart = null;
+
+        // Initialize charts
+        function initCharts() {
+            // Queries Chart
+            const queriesCtx = document.getElementById('queriesChart').getContext('2d');
+            queriesChart = new Chart(queriesCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Ερωτήσεις',
+                        data: [],
+                        borderColor: 'rgb(99, 102, 241)',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Intents Chart
+            const intentsCtx = document.getElementById('intentsChart').getContext('2d');
+            intentsChart = new Chart(intentsCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [
+                            'rgba(99, 102, 241, 0.8)',
+                            'rgba(34, 197, 94, 0.8)',
+                            'rgba(251, 191, 36, 0.8)',
+                            'rgba(239, 68, 68, 0.8)',
+                            'rgba(168, 85, 247, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Fetch today's stats
+        async function fetchTodayStats() {
+            try {
+                const response = await fetch(`${API_BASE}/api/stats/today`);
+                const data = await response.json();
+
+                document.getElementById('total-queries').textContent = data.total_queries.toLocaleString('el-GR');
+                document.getElementById('unique-users').textContent = data.unique_users.toLocaleString('el-GR');
+                document.getElementById('avg-confidence').textContent = (data.avg_confidence * 100).toFixed(1) + '%';
+            } catch (error) {
+                console.error('Error fetching today stats:', error);
+            }
+        }
+
+        // Fetch 7-day stats for chart
+        async function fetchWeekStats() {
+            try {
+                const today = new Date();
+                const weekAgo = new Date(today);
+                weekAgo.setDate(weekAgo.getDate() - 7);
+
+                const startDate = weekAgo.toISOString().split('T')[0];
+                const endDate = today.toISOString().split('T')[0];
+
+                const response = await fetch(`${API_BASE}/api/stats/range?start_date=${startDate}&end_date=${endDate}`);
+                const data = await response.json();
+
+                // Update chart
+                queriesChart.data.labels = data.stats.map(s => {
+                    const date = new Date(s.date);
+                    return date.toLocaleDateString('el-GR', { month: 'short', day: 'numeric' });
+                });
+                queriesChart.data.datasets[0].data = data.stats.map(s => s.total_queries);
+                queriesChart.update();
+            } catch (error) {
+                console.error('Error fetching week stats:', error);
+            }
+        }
+
+        // Fetch today's intents
+        async function fetchTodayIntents() {
+            try {
+                const response = await fetch(`${API_BASE}/api/intents/today`);
+                const data = await response.json();
+
+                // Update chart
+                intentsChart.data.labels = data.intents.slice(0, 5).map(i => i.intent);
+                intentsChart.data.datasets[0].data = data.intents.slice(0, 5).map(i => i.count);
+                intentsChart.update();
+            } catch (error) {
+                console.error('Error fetching intents:', error);
+            }
+        }
+
+        // Fetch summary
+        async function fetchSummary() {
+            try {
+                const response = await fetch(`${API_BASE}/api/summary`);
+                const data = await response.json();
+
+                document.getElementById('total-users').textContent = data.all_time.total_users.toLocaleString('el-GR');
+            } catch (error) {
+                console.error('Error fetching summary:', error);
+            }
+        }
+
+        // Fetch low confidence queries
+        async function fetchLowConfidence() {
+            try {
+                const response = await fetch(`${API_BASE}/api/low-confidence?days=7&threshold=0.6`);
+                const data = await response.json();
+
+                document.getElementById('low-confidence-count').textContent = `${data.count} ερωτήσεις`;
+
+                const tbody = document.getElementById('low-confidence-table');
+                tbody.innerHTML = '';
+
+                if (data.queries.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">Δεν βρέθηκαν ερωτήσεις με χαμηλή εμπιστοσύνη</td></tr>';
+                    return;
+                }
+
+                data.queries.slice(0, 10).forEach(q => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="px-6 py-4 text-sm text-gray-900">${q.query_text || 'N/A'}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">${q.intent || 'N/A'}</td>
+                        <td class="px-6 py-4 text-sm">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                q.confidence < 0.4 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                            }">
+                                ${(q.confidence * 100).toFixed(1)}%
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">${new Date(q.timestamp).toLocaleString('el-GR')}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error fetching low confidence:', error);
+            }
+        }
+
+        // Fetch recent conversations
+        async function fetchRecentConversations() {
+            try {
+                const response = await fetch(`${API_BASE}/api/conversations/recent?limit=10`);
+                const data = await response.json();
+
+                const container = document.getElementById('recent-conversations');
+                container.innerHTML = '';
+
+                if (data.conversations.length === 0) {
+                    container.innerHTML = '<p class="text-center text-gray-500">Δεν βρέθηκαν πρόσφατες συνομιλίες</p>';
+                    return;
+                }
+
+                data.conversations.forEach(conv => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition';
+                    div.innerHTML = `
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-900">Χρήστης: ${conv.sender_id.substring(0, 16)}...</p>
+                            <p class="text-sm text-gray-600 mt-1">${conv.last_message || 'N/A'}</p>
+                        </div>
+                        <div class="text-right ml-4">
+                            <p class="text-xs text-gray-500">${new Date(conv.timestamp).toLocaleString('el-GR')}</p>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (error) {
+                console.error('Error fetching conversations:', error);
+            }
+        }
+
+        // Refresh all data
+        async function refreshData() {
+            await Promise.all([
+                fetchTodayStats(),
+                fetchWeekStats(),
+                fetchTodayIntents(),
+                fetchSummary(),
+                fetchLowConfidence(),
+                fetchRecentConversations()
+            ]);
+        }
+
+        // Export CSV
+        function exportCSV() {
+            window.open(`${API_BASE}/api/export/csv?days=30`, '_blank');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            refreshData();
+
+            // Auto-refresh every 30 seconds
+            setInterval(refreshData, 30000);
+        });
+    </script>
+</body>
+</html>

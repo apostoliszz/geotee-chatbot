@@ -1,1 +1,160 @@
-# Copy content from Claude artifacts
+version: "3.1"
+
+# Session configuration
+session_config:
+  session_expiration_time: 60  # 60 minutes
+  carry_over_slots_to_new_session: false
+
+# Intents
+intents:
+  # Core intents
+  - greet
+  - goodbye
+  - affirm
+  - deny
+  - bot_challenge
+  - thank
+  - help
+  
+  # FAQ intents
+  - faq
+  
+  # General knowledge search
+  - ask_general_info
+  
+  # Out of scope
+  - out_of_scope
+  - english_query
+  
+  # Terms of service
+  - accept_terms
+  - decline_terms
+
+# Entities
+entities:
+  - search_query
+  - faq_category
+
+# Slots
+slots:
+  terms_accepted:
+    type: bool
+    influence_conversation: true
+    initial_value: false
+    mappings:
+      - type: custom
+  
+  session_queries_count:
+    type: float
+    influence_conversation: false
+    initial_value: 0
+    mappings:
+      - type: custom
+  
+  rate_limited:
+    type: bool
+    influence_conversation: true
+    initial_value: false
+    mappings:
+      - type: custom
+  
+  search_results:
+    type: any
+    influence_conversation: false
+    mappings:
+      - type: custom
+
+# Responses
+responses:
+  utter_greet:
+    - text: "Γεια σας! Είμαι ο βοηθός του Γεωτεχνικού Επιμελητηρίου Ελλάδος. Πώς μπορώ να σας βοηθήσω σήμερα;"
+    - text: "Καλώς ήρθατε στο ΓΕΩΤΕΕ! Είμαι εδώ για να απαντήσω στις ερωτήσεις σας. Τι θα θέλατε να μάθετε;"
+
+  utter_goodbye:
+    - text: "Αντίο! Ελπίζω να σας βοήθησα. Για περισσότερες πληροφορίες επισκεφθείτε το geotee.gr"
+    - text: "Ευχαριστώ που επικοινωνήσατε μαζί μου! Καλή συνέχεια!"
+
+  utter_thank:
+    - text: "Παρακαλώ! Χαίρομαι που μπόρεσα να βοηθήσω."
+    - text: "Είμαι στη διάθεσή σας! Αν έχετε άλλες ερωτήσεις, ρωτήστε με."
+
+  utter_help:
+    - text: |
+        Μπορώ να σας βοηθήσω με:
+        
+        ✅ Συχνές ερωτήσεις για το ΓΕΩΤΕΕ
+        ✅ Πληροφορίες από την ιστοσελίδα geotee.gr
+        ✅ Υπηρεσίες και διαδικασίες
+        
+        Απλά κάντε μια ερώτηση στα Ελληνικά!
+
+  utter_iamabot:
+    - text: "Είμαι ψηφιακός βοηθός που δημιουργήθηκε για να εξυπηρετώ τους πολίτες του Γεωτεχνικού Επιμελητηρίου Ελλάδος."
+
+  utter_default:
+    - text: "Συγγνώμη, δεν κατάλαβα την ερώτησή σας. Μπορείτε να τη διατυπώσετε διαφορετικά;"
+    - text: "Δεν είμαι σίγουρος τι εννοείτε. Μπορείτε να κάνετε μια πιο συγκεκριμένη ερώτηση;"
+
+  utter_out_of_scope:
+    - text: |
+        Λυπάμαι, αλλά μπορώ να απαντήσω μόνο σε ερωτήσεις σχετικές με το Γεωτεχνικό Επιμελητήριο Ελλάδος.
+        
+        Για περισσότερες πληροφορίες επισκεφθείτε: https://web.geotee.gr
+
+  utter_english_not_supported:
+    - text: |
+        Συγγνώμη, αλλά υποστηρίζω μόνο ερωτήσεις στα Ελληνικά. 🇬🇷
+        
+        I only support questions in Greek. Please ask in Greek.
+
+  utter_rate_limit_exceeded:
+    - text: |
+        Έχετε φτάσει το όριο των 10 ερωτήσεων ανά ώρα.
+        
+        Παρακαλώ δοκιμάστε ξανά σε λίγο ή επισκεφθείτε την ιστοσελίδα μας: https://web.geotee.gr
+
+  utter_terms_of_service:
+    - text: |
+        📋 Όροι Χρήσης
+        
+        Καλώς ήρθατε στον ψηφιακό βοηθό του ΓΕΩΤΕΕ. Πριν συνεχίσετε, παρακαλώ διαβάστε τους όρους χρήσης:
+        
+        • Οι απαντήσεις παρέχονται αυτόματα και ενδέχεται να περιέχουν ανακρίβειες
+        • Για επίσημες πληροφορίες επικοινωνήστε με το ΓΕΩΤΕΕ
+        • Η χρήση περιορίζεται σε 10 ερωτήσεις ανά ώρα
+        • Τα δεδομένα σας δεν αποθηκεύονται
+        
+        Αποδέχεστε τους όρους χρήσης;
+
+  utter_terms_accepted:
+    - text: "Ευχαριστώ! Τώρα μπορείτε να κάνετε τις ερωτήσεις σας. Πώς μπορώ να σας βοηθήσω;"
+
+  utter_terms_declined:
+    - text: |
+        Κατανοώ. Δυστυχώς, χωρίς αποδοχή των όρων δεν μπορώ να συνεχίσω.
+        
+        Για πληροφορίες επισκεφθείτε: https://web.geotee.gr
+
+  utter_no_results_found:
+    - text: |
+        Δεν βρήκα συγκεκριμένες πληροφορίες για αυτό το θέμα στη βάση γνώσης μου.
+        
+        Μπορείτε να:
+        • Διατυπώσετε την ερώτηση διαφορετικά
+        • Επισκεφθείτε το https://web.geotee.gr
+        • Επικοινωνήστε με το ΓΕΩΤΕΕ στο 210 8980873
+
+# Actions
+actions:
+  - action_check_terms
+  - action_check_rate_limit
+  - action_detect_language
+  - action_search_knowledge_base
+  - action_default_fallback
+  - action_reset_session
+
+# Forms (αν χρειαστούν στο μέλλον)
+forms: {}
+
+# Custom action names
+action_default_fallback_name: action_default_fallback

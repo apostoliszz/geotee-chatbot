@@ -1,1 +1,67 @@
-# Copy content from Claude artifacts
+# Configuration for Rasa NLU and Core
+# Language: Greek (el)
+
+language: el
+pipeline:
+  # Tokenization
+  - name: WhitespaceTokenizer
+  
+  # Featurization
+  - name: RegexFeaturizer
+  
+  - name: LexicalSyntacticFeaturizer
+  
+  - name: CountVectorsFeaturizer
+    analyzer: char_wb
+    min_ngram: 1
+    max_ngram: 4
+  
+  - name: CountVectorsFeaturizer
+    analyzer: word
+    min_ngram: 1
+    max_ngram: 3
+  
+  # Intent Classification & Entity Extraction
+  - name: DIETClassifier
+    epochs: 100
+    constrain_similarities: true
+    model_confidence: softmax
+    entity_recognition: true
+    use_masked_language_model: false
+    ranking_length: 10
+  
+  # Entity Extraction
+  - name: EntitySynonymMapper
+  
+  # Response Selection (για FAQ)
+  - name: ResponseSelector
+    epochs: 100
+    constrain_similarities: true
+    retrieval_intent: faq
+  
+  # Fallback handling
+  - name: FallbackClassifier
+    threshold: 0.7
+    ambiguity_threshold: 0.1
+
+# Policies for dialogue management
+policies:
+  # Memoization policy - αποθηκεύει exact matches
+  - name: MemoizationPolicy
+    max_history: 5
+  
+  # Rule policy - για rules
+  - name: RulePolicy
+    core_fallback_threshold: 0.4
+    core_fallback_action_name: "action_default_fallback"
+    enable_fallback_prediction: true
+  
+  # TED Policy - για stories
+  - name: TEDPolicy
+    max_history: 5
+    epochs: 100
+    constrain_similarities: true
+    model_confidence: softmax
+
+# Assistant ID
+assistant_id: geotee_chatbot_v1

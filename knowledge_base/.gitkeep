@@ -1,0 +1,2 @@
+# This file ensures the knowledge_base/ directory is tracked by Git
+# Vector database (Qdrant) data will be stored here during runtime

@@ -1,0 +1,356 @@
+# =============================================================================
+# ΓΕΩΤΕΕ CHATBOT - GIT IGNORE
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# SENSITIVE FILES - NEVER COMMIT THESE!
+# -----------------------------------------------------------------------------
+.env
+.env.local
+.env.*.local
+credentials.yml
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+.htpasswd
+
+# Secrets
+secrets/
+secrets.json
+config/secrets/
+
+# API Keys
+*api_key*
+*secret_key*
+*private_key*
+
+# -----------------------------------------------------------------------------
+# PYTHON
+# -----------------------------------------------------------------------------
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+.ENV
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# -----------------------------------------------------------------------------
+# RASA SPECIFIC
+# -----------------------------------------------------------------------------
+# Trained models (too large for git)
+models/*.tar.gz
+rasa_bot/models/*.tar.gz
+
+# Rasa training cache
+.rasa/
+
+# Rasa credentials with tokens
+rasa_bot/credentials.yml
+
+# Rasa endpoints with actual URLs
+# rasa_bot/endpoints.yml  # Uncomment if it contains sensitive info
+
+# Story graphs
+graph.html
+story_graph.dot
+
+# -----------------------------------------------------------------------------
+# DATABASES & DATA
+# -----------------------------------------------------------------------------
+# PostgreSQL
+*.sql
+*.dump
+*.backup
+
+# SQLite
+*.db
+*.sqlite
+*.sqlite3
+
+# Redis dumps
+dump.rdb
+
+# Qdrant data
+knowledge_base/qdrant_data/
+qdrant_data/
+*.qdrant
+
+# Scraped data (can be regenerated)
+data/*.json
+data/*.csv
+data/*.jsonl
+scraped_data*.json
+
+# Backups
+backups/
+*.tar.gz
+*.zip
+*.bz2
+
+# -----------------------------------------------------------------------------
+# LOGS
+# -----------------------------------------------------------------------------
+logs/
+*.log
+*.log.*
+log/
+*.out
+
+# Rasa logs
+rasa_bot/*.log
+rasa_bot/logs/
+
+# Scraper logs
+scraper/*.log
+scraper/logs/
+
+# Analytics logs
+analytics/*.log
+
+# System logs
+nohup.out
+error.log
+access.log
+
+# -----------------------------------------------------------------------------
+# DOCKER
+# -----------------------------------------------------------------------------
+# Docker volumes
+**/docker/volumes/
+docker-compose.override.yml
+
+# Container data
+postgres_data/
+redis_data/
+qdrant_data/
+
+# -----------------------------------------------------------------------------
+# NGINX
+# -----------------------------------------------------------------------------
+# SSL certificates
+*.pem
+*.crt
+*.key
+ssl/
+certs/
+
+# Nginx cache
+nginx_cache/
+
+# Nginx password files
+.htpasswd
+
+# -----------------------------------------------------------------------------
+# NODE MODULES (if using any JS tools)
+# -----------------------------------------------------------------------------
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# -----------------------------------------------------------------------------
+# MACOS
+# -----------------------------------------------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# -----------------------------------------------------------------------------
+# LINUX
+# -----------------------------------------------------------------------------
+*~
+.directory
+.Trash-*
+
+# -----------------------------------------------------------------------------
+# WINDOWS
+# -----------------------------------------------------------------------------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# -----------------------------------------------------------------------------
+# IDEs
+# -----------------------------------------------------------------------------
+# VSCode
+.vscode/
+.history/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.vim/
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# -----------------------------------------------------------------------------
+# TEMPORARY FILES
+# -----------------------------------------------------------------------------
+tmp/
+temp/
+*.tmp
+*.temp
+*.cache
+*.pid
+*.seed
+*.pid.lock
+
+# -----------------------------------------------------------------------------
+# SYSTEM FILES
+# -----------------------------------------------------------------------------
+.bashrc.backup
+.bash_history
+.bash_logout
+
+# -----------------------------------------------------------------------------
+# PROJECT SPECIFIC
+# -----------------------------------------------------------------------------
+# Development databases
+dev.db
+test.db
+
+# Test outputs
+test_results/
+test_output/
+
+# Documentation builds
+docs/_build/
+docs/.doctrees/
+site/
+
+# Translations
+*.mo
+*.pot
+
+# Migrations (if you want to regenerate)
+# migrations/
+
+# Media files (if users can upload)
+media/
+uploads/
+
+# Static files collection
+staticfiles/
+static_root/
+
+# -----------------------------------------------------------------------------
+# MONITORING & ANALYTICS
+# -----------------------------------------------------------------------------
+# Matomo data (if self-hosted)
+matomo/
+piwik/
+
+# Prometheus data
+prometheus_data/
+
+# Grafana data
+grafana_data/
+
+# -----------------------------------------------------------------------------
+# CI/CD
+# -----------------------------------------------------------------------------
+.github/workflows/secrets/
+
+# -----------------------------------------------------------------------------
+# MISC
+# -----------------------------------------------------------------------------
+TODO.md
+NOTES.md
+*.local
+.scratch/
+scratch/
+
+# Large files
+*.iso
+*.dmg
+*.gz
+*.tar
+*.rar
+*.7z
+
+# =============================================================================
+# END OF .gitignore
+# =============================================================================

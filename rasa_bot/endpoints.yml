@@ -1,1 +1,44 @@
-# Copy content from Claude artifacts
+# Rasa Endpoints Configuration
+
+# Action server endpoint
+action_endpoint:
+  url: "http://rasa-actions:5055/webhook"
+  # Authentication token (αν χρειαστεί)
+  # token: ""
+
+# Tracker store - PostgreSQL
+tracker_store:
+  type: SQL
+  dialect: "postgresql"
+  url: "${POSTGRES_HOST}"
+  port: ${POSTGRES_PORT}
+  db: "${POSTGRES_DB}"
+  username: "${POSTGRES_USER}"
+  password: "${POSTGRES_PASSWORD}"
+  login_db: "postgres"
+  query:
+    driver: "postgresql"
+    pool_size: 50
+    max_overflow: 100
+    pool_recycle: 3600
+
+# Event broker (optional - αν θέλεις event streaming)
+# event_broker:
+#   type: pika
+#   url: "rabbitmq"
+#   username: "guest"
+#   password: "guest"
+#   queue: "rasa_events"
+
+# Model server (optional - για remote model serving)
+# models:
+#   url: "http://model-server:5000"
+#   wait_time_between_pulls: 10
+
+# Lock store (για distributed deployment)
+# lock_store:
+#   type: "redis"
+#   url: "redis"
+#   port: 6379
+#   password: ""
+#   db: 1
