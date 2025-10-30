@@ -108,12 +108,12 @@ log_success "Essential tools installed"
 # -----------------------------------------------------------------------------
 # INSTALL PYTHON 3.11
 # -----------------------------------------------------------------------------
-log_section "🐍 STEP 3: PYTHON 3.11"
+log_section "🐍 STEP 3: PYTHON 3.10"
 
-log_info "Installing Python 3.11..."
+log_info "Installing Python 3.10..."
 
-dnf install -y python3.11 python3.11-devel python3.11-pip
-alternatives --set python3 /usr/bin/python3.11
+dnf install -y python3.10 python3.10-devel python3.10-pip
+alternatives --set python3 /usr/bin/python3.10
 
 # Verify Python version
 PYTHON_VERSION=$(python3 --version)

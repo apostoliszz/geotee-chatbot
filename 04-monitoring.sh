@@ -109,7 +109,7 @@ print_header "🔧 SYSTEM SERVICES"
 
 check_service_status docker
 check_service_status redis
-check_service_status postgresql-15
+check_service_status postgresql
 check_service_status nginx
 
 # -----------------------------------------------------------------------------
